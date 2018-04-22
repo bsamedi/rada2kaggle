@@ -7,37 +7,34 @@ SOURCE_FILE=chron-json.zip
 TARGET_DIR=./target/$SOURCE_DIR
 
 main() {
-    #cleanup_target
-    #get_full_binary
-    unpack_json_files
-    convert_to_utf8 `list_archived_json_files`
+    init
+
+    cleanup_target
+    get_full_binary http://data.rada.gov.ua/$SOURCE_DIR/$SOURCE_FILE $SOURCE_FILE
+    unpack_json_files $SOURCE_FILE
+    convert_to_utf8 `list_archived_json_files $SOURCE_FILE`
 }
+  init() {
+    mkdir -p $TARGET_DIR
+    cd $TARGET_DIR
+  }
   cleanup_target() {
-    if [ -n "$TARGET_DIR" ]
-    then
-        mkdir -p $TARGET_DIR
-        touch $TARGET_DIR/dummy
-        rm $TARGET_DIR/*
-    else
-        echo 'Target directory not set' >&2
-        exit 1
-    fi
+    touch dummy.json
+    rm *.json
    }
   get_full_binary() {
-    curl \
-        http://data.rada.gov.ua/$SOURCE_DIR/$SOURCE_FILE \
-        -o $TARGET_DIR/$SOURCE_FILE
+    url=$1
+    filename=$2
+    #curl $url -o $filename
   }
   unpack_json_files() {
-    (   cd $TARGET_DIR
-        rm *.json
-        unzip -n $SOURCE_FILE
-    )
+    unzip -n $1
   }
   list_archived_json_files() {
-    zipinfo -1 $TARGET_DIR/$SOURCE_FILE
+    zipinfo -1 $1
   }
   convert_to_utf8() {
+    # pass filenames to convert as arguments
     echo -n 'Converting to UTF-8 '
     set -e
     TEMPFILE=`mktemp /tmp/rada2kaggle.XXXXXXXX`
@@ -45,8 +42,8 @@ main() {
     for f in "$@"
     do
         echo -n .
-        iconv -f WINDOWS-1251 -t UTF-8 $TARGET_DIR/$f > $TEMPFILE
-        cp $TEMPFILE $TARGET_DIR/$f
+        iconv -f WINDOWS-1251 -t UTF-8 $f > $TEMPFILE
+        cp $TEMPFILE $f
     done
     echo Done
   }
