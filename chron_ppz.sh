@@ -13,7 +13,7 @@ main() {
     get_full_binary http://data.rada.gov.ua/$SOURCE_DIR/$SOURCE_FILE $SOURCE_FILE
     unpack_json_files $SOURCE_FILE
     convert_to_utf8 `list_archived_json_files $SOURCE_FILE`
-    merge_to_json_array `list_archived_json_files $SOURCE_FILE` > agenda-result.json
+    merge_to_json_array $(json_objects_only `list_archived_json_files $SOURCE_FILE`) > agenda-result.json
 }
   init() {
     mkdir -p $TARGET_DIR
@@ -50,15 +50,26 @@ main() {
   }
   merge_to_json_array() {
     # merge multiple json files into single json array of source file data objects
-    echo '['
+    echo -n '['
     cat $1
     shift
     for file in "$@"
     do
-        echo -n ','
-        cat $file
+        fileStart=`head -c 1 -- $file`
+        if [ $fileStart == '{' ]
+        then
+            echo ','
+            cat $file
+        fi
     done
     echo ']'
   }
+    json_objects_only() {
+        for f in "$@"
+        do
+            firstChar=`head -c 1 -- $1`
+            [ $firstChar == '{' ] && echo $f
+        done
+    }
 
 main "$@"
